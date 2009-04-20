@@ -321,7 +321,7 @@ function get_show_info($show, $ep = '', $exact = '', $thetvdbid = 0) {
       );
       
       //get current server time
-      //--
+      //
       
       //get series id (normally added on insert/update on index.php)
       if($thetvdbid == 0) {
