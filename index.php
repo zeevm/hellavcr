@@ -410,10 +410,40 @@ if(file_exists($config['xml_tv'])) {
       <div id="info_<?php print $showID; ?>">
         <h1>
           <div class="icons">
-            <a href="<?php print $show->url; ?>" target="_blank" title="<?php print $show->url; ?>"><img alt="" src="images/info.png" /></a>
+            <?php
+            //build up params
+            $newzbin_query = array(
+              'q=^' . urlencode($show->name),
+              'u_v3_retention=' . ($config['ng_retention'] * 24 * 60 * 60),
+              'searchaction=Search',
+              'fpn=p',
+              'category=8',
+              'area=-1',
+              'u_nfo_posts_only=0',
+              'u_url_posts_only=0',
+              'u_comment_posts_only=0',
+              'sort=ps_edit_date',
+              'order=desc',
+              'areadone=-1'
+            );
+            if(strlen($show->language) > 0) {
+              $newzbin_query[] = 'ps_rb_language=' . $show->language;
+            }
+            if(strlen($show->format) > 0) {
+              $newzbin_query[] = 'ps_rb_video_format=' . $show->format;
+            }
+            if(strlen($show->source) > 0) {
+              $newzbin_query[] = 'ps_rb_source=' . $show->source;
+            }
+            if(!empty($config['newzbin_groups'])) {
+             $newzbin_query[] = 'group=' . urlencode($config['newzbin_groups']);
+            }
+            ?>
+            <a href="<?php print $config['newzbin']['root_url'] . 'search/?' . implode('&', $newzbin_query); ?>" target="_blank" title="newzbin"><img alt="" src="images/newzbin.png" /></a>
+            <a href="<?php print $show->url; ?>" target="_blank" title="tvrage"><img alt="" src="images/info.png" /></a>
             <?php if(!empty($show->attributes()->id)) { ?>
-            <a href="#" title="Edit <?php print htmlentities($show->name); ?>" id="edit_<?php print $showID; ?>_link" class="editShow"><img alt="" src="images/edit.png" /></a>
-            <a href="#" title="Delete <?php print htmlentities($show->name); ?>" id="<?php print $showID; ?>|<?php print $show->name; ?>" class="delShow"><img alt="" src="images/delete.png" /></a>
+            <a href="#" title="edit" id="edit_<?php print $showID; ?>_link" class="editShow"><img alt="" src="images/edit.png" /></a>
+            <a href="#" title="delete?" id="<?php print $showID; ?>|<?php print $show->name; ?>" class="delShow"><img alt="" src="images/delete.png" /></a>
             <?php } ?>
           </div>
           <?php print $show->name; ?>

@@ -75,6 +75,9 @@ $config['thetvdb'] = array(
   'show_info' => 'http://www.thetvdb.com/api/GetSeries.php?seriesname=',
   'api_key' => 'A6D11F92201EEBFA'
 );
+$config['newzbin'] = array(
+  'root_url' => 'https://v3.newzbin.com/'
+);
 
 //clever beginnings to tweets, rest of sentence ends in: [show] [season]x[episode]
 $config['hollers'] = array(
