@@ -467,7 +467,7 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
 	}
 	
 	//send to newzbin
-	if($fp = @fopen('http://v3.newzbin.com/search/?' . implode('&', $query), 'r')) {
+	if($fp = @fopen('https://v3.newzbin.com/search/?' . implode('&', $query), 'r')) {
 		$line = @fgetcsv($fp);
 		
 		/*
@@ -507,11 +507,12 @@ function download_nzb($newzbin_id) {
   $nzb_headers = array();
   $ch = curl_init();
   curl_setopt_array($ch, array(
-  	CURLOPT_URL => 'http://v3.newzbin.com/api/dnzb/',
+  	CURLOPT_URL => 'https://v3.newzbin.com/api/dnzb/',
   	CURLOPT_USERAGENT => 'hellaVCR/' . $config['version'],
   	CURLOPT_POST => 1,
+  	CURLOPT_HEADER => 0,
   	CURLOPT_RETURNTRANSFER => 1,
-  	CURLOPT_HEADER => 0, 
+  	CURLOPT_SSL_VERIFYPEER => 0,
   	CURLOPT_HEADERFUNCTION => 'read_header',
   	CURLOPT_POSTFIELDS => 'username=' . $config['newzbin_username'] . '&password=' . $config['newzbin_password'] . '&reportid=' . $newzbin_id
   ));
