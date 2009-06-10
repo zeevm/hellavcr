@@ -101,6 +101,8 @@ function process_tv() {
       if(!$show->next) $show->addChild('next', htmlspecialchars(trim($next_info)));
       else $show->next = htmlspecialchars(trim($next_info));
       
+      //print date($config['logging']['date_format']) . '  next episode: ' . $show_info['Next Episode']['episode'] . "\n";
+      
       //update next timestamp (includes date and time)
       if(strpos($show_info['RFC3339'], 'T:00-') !== false) {
         $time_prefix = '00:00';
@@ -139,6 +141,7 @@ function process_tv() {
         
         print date($config['logging']['date_format']) . '  last episode: ' . $show->season . 'x' . sprintf('%02d', $show->episode) . "\n";
         $one_ep_behind = ($show->season == $latest_season && $show->episode == $latest_episode - 1);
+        $skipped_episodes = 0;
         
         //loop over all mising episodes
         $current_season = intval($show->season);
@@ -222,6 +225,7 @@ function process_tv() {
 								print "\n";
 							}
 							else {
+							  $skipped_episodes++;
 								print "skipping this episode\n";
 							}
 							
@@ -233,6 +237,9 @@ function process_tv() {
 							}
 							
               $current_episode++;
+              if($skipped_episodes >= 5) {
+                break;
+              }
             }
             //invalid episode, proceed to next season
             else {
@@ -608,13 +615,14 @@ function send_to_sabnzbd($newzbin_id, $isURL = false) {
 
   //set params
   $authString = ((strlen($config['sabnzbd_username']) > 0 && strlen($config['sabnzbd_password']) > 0) ? '&ma_username=' . $config['sabnzbd_username'] . '&ma_password=' . $config['sabnzbd_password'] : '');
+  $apiString = '&apikey=' . $config['sabnzbd_apikey'];
   $modeString = ($isURL ? 'addurl' : 'addid');
   $priority = ((isset($config['sabnzbd_0.5']) && $config['sabnzbd_0.5']) ? '&priority=1' : '');
 
   //make curl call
   $ch = curl_init();
   curl_setopt_array($ch, array(
-    CURLOPT_URL => 'http://' . $config['sabnzbd_server'] . ':' . $config['sabnzbd_port'] . '/sabnzbd/api?mode=' . $modeString . $authString . '&cat=' . $config['sabnzbd_category'] . '&pp=3&name=' . urlencode($newzbin_id) . $priority,
+    CURLOPT_URL => 'http://' . $config['sabnzbd_server'] . ':' . $config['sabnzbd_port'] . '/sabnzbd/api?mode=' . $modeString . $authString . $apiString . '&cat=' . $config['sabnzbd_category'] . '&pp=3&name=' . urlencode($newzbin_id) . $priority,
     CURLOPT_HEADER => 0
   ));
   $result = curl_exec($ch);

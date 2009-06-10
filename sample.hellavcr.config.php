@@ -36,17 +36,18 @@ $config = array(
   //sabnzbd handler
   'sabnzbd_server' => 'localhost',
   'sabnzbd_port' => '8080',
+  'sabnzbd_apikey' => 'key',
   'sabnzbd_username' => 'username',
   'sabnzbd_password' => 'password',
   'sabnzbd_category' => 'tv',
-  'sabnzbd_0.5' => true, // <-- until 0.5 is released, currently svn only
+  'sabnzbd_0.5' => false, // <-- until 0.5 is released, currently svn only
   
   //mail options
-  'mail' => true,
+  'mail' => false,
   'mail_to' => 'youremail@something.com',
   
   //twitter account info
-  'twitter' => true,
+  'twitter' => false,
   'twitter_username' => 'username',
   'twitter_password' => 'password',
   
