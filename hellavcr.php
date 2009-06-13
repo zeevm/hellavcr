@@ -440,41 +440,12 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
 	$q_debug = $show . ' - ' . $season . 'x' . sprintf('%02d', $episode);
 	print date($config['logging']['date_format']) . '  searching newzbin for ' . $q_debug . $config['debug_separator'];
 	
-	//build up params
-	$query = array(
-		'q=^' . urlencode($q),
-		'u_v3_retention=' . ($config['ng_retention'] * 24 * 60 * 60),
-		'searchaction=Search',
-		'fpn=p',
-		'category=8',
-		'area=-1',
-		'u_nfo_posts_only=0',
-		'u_url_posts_only=0',
-		'u_comment_posts_only=0',
-		'sort=ps_edit_date',
-		'order=desc',
-		'areadone=-1',
-		'feed=csv'
-	);
-	
-	if(strlen($language) > 0) {
-    $query[] = 'ps_rb_language=' . $language;
-	}
-	
-	if(strlen($format) > 0) {
-    $query[] = 'ps_rb_video_format=' . $format;
-	}
-	
-	if(strlen($source) > 0) {
-    $query[] = 'ps_rb_source=' . $source;
-	}
-	
-	if(!empty($config['newzbin_groups'])) {
-	 $query[] = 'group=' . urlencode($config['newzbin_groups']);
-	}
+	//formatted query
+	$query = build_newzbin_search_string($q, $language, $format, $source, true);
 	
 	//send to newzbin
-	if($fp = @fopen($config['newzbin']['root_url'] . 'search/?' . implode('&', $query), 'r')) {
+	//if($fp = @fopen($config['newzbin']['root_url'] . 'search/?' . implode('&', $query), 'r')) {
+	if($fp = @fopen($query, 'r')) {
 		$line = @fgetcsv($fp);
 		
 		/*
@@ -498,6 +469,45 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
   	}
 	}
 	
+}
+
+//common function to build up the full newzbin search string
+//used by search_newzbin() and the newzbin icon on index.php
+function build_newzbin_search_string($name, $language, $format, $source, $csv = false) {
+  global $config;
+  
+  //build up params
+  $query = array(
+    'q=^' . urlencode($name),
+    'u_v3_retention=' . ($config['ng_retention'] * 24 * 60 * 60),
+    'searchaction=Search',
+    'fpn=p',
+    'category=8',
+    'area=-1',
+    'u_nfo_posts_only=0',
+    'u_url_posts_only=0',
+    'u_comment_posts_only=0',
+    'sort=ps_edit_date',
+    'order=desc',
+    'areadone=-1'
+  );
+  if(strlen($language) > 0) {
+    $query[] = 'ps_rb_language=' . $language;
+  }
+  if(strlen($format) > 0) {
+    $query[] = 'ps_rb_video_format=' . $format;
+  }
+  if(strlen($source) > 0) {
+    $query[] = 'ps_rb_source=' . $source;
+  }
+  if(!empty($config['newzbin_groups'])) {
+   $query[] = 'group=' . urlencode($config['newzbin_groups']);
+  }
+  if($csv) {
+    $query[] = 'feed=csv';
+  }
+  
+  return $config['newzbin']['root_url'] . 'search/?' . implode( '&', $query);
 }
 
 //
