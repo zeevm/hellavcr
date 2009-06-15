@@ -60,6 +60,31 @@ function process_tv() {
       
       //make sure it has a downloads node
       if(!$show->downloads) $show->addChild('downloads', '');
+      //convert old style download to new style
+      else {
+        $remove = 0;
+        foreach($show->downloads->download as $download) {
+          if(!empty($download->episode)) {
+            $ep_parts = explode('x', $download->episode);
+            $double_parts = explode('-', $ep_parts[1]);
+            
+            //add new nodes
+            foreach($double_parts as $ep) {
+              $d = $show->downloads->addChild('download');
+              $d->addAttribute('season', intval($ep_parts[0]));
+              $d->addAttribute('episode', intval($ep));
+              $d->addAttribute('timestamp', $download->timestamp);
+            }
+            
+            $remove++;
+          }
+        }
+        
+        //remove old nodes
+        while($remove-- > 0) {
+          unset($show->downloads->download[0]);
+        } 
+      }
       
       //auto update show name to match info scraper
       if($config['update_show_name'] && strlen(trim($show_info['name'])) > 0 && trim($show->name) != $show_info['name']) {
@@ -67,9 +92,43 @@ function process_tv() {
         print date($config['logging']['date_format']) . '  name updated to match ' . $config['info_scraper'] . ': ' . $show->name . "\n";
       }
       
+      //update tvrage series id
+      if(!$show->tvrageid) $show->addChild('tvrageid', $show_info['tvrageid']);
+      else $show->tvrageid = trim($show_info['tvrageid']);
+      
       //update thetvdb series id
       if(!$show->thetvdbid) $show->addChild('thetvdbid', $show_info['thetvdbid']);
       else $show->thetvdbid = trim($show_info['thetvdbid']);
+
+      //episode list (seasons, eps)
+      if(!$show->episodelist) $show->addChild('episodelist', '');
+      
+      if(!empty($show_info['episodelist'])) {
+        foreach($show_info['episodelist'] as $season => $episodes) {
+          $s_existing = $show->episodelist->xpath('season[@num=' . $season . ']');
+          
+          //exists, so just update
+          if(!empty($s_existing)) {
+            $s_existing[0]['episodes'] = sizeof($episodes);
+          }
+          //add new
+          else {
+            $s = $show->episodelist->addChild('season');
+            $s->addAttribute('num', $season);
+            $s->addAttribute('episodes', sizeof($episodes));
+          }
+          
+          /*
+          //full episode details
+          foreach($episodes as $episode) {
+            $e = $s->addChild('episode');
+            $e->addAttribute('num', $episode['num']);
+            $e->addAttribute('aired', $episode['aired']);
+            $e->addAttribute('title', htmlentities($episode['title']));
+          }
+          */
+        }
+      }
 
       //update episode URL
       if(!$show->url) $show->addChild('url', $show_info['Show URL']);
@@ -145,7 +204,7 @@ function process_tv() {
         
         //loop over all mising episodes
         $current_season = intval($show->season);
-        while($current_season <= $latest_season) {
+        while($current_season <= $latest_season && $current_season <= sizeof($show_info['episodelist'])) {
           $current_episode = ($current_season > intval($show->season) ? 1 : intval($show->episode + 1));
             
           while($current_episode <= $latest_episode || $current_season < $latest_season) {
@@ -157,13 +216,16 @@ function process_tv() {
               //search newzbin
               $newzbin_info = search_newzbin($show->name, $show->year, $current_season, $current_episode, $show->language, $show->format, $show->source);
               
-              //id found
               $nzb_downloaded = false;
+              $double_ep = false;
+              
+              //id found
               if($newzbin_info) {
                 //double episode found
 								if(strpos($newzbin_info['title'], $current_season . 'x' . sprintf('%02d', $current_episode + 1)) !== false) {
 								  $current_episode++;
 								  $episode_string .= '-' . sprintf('%02d', $current_episode);
+								  $double_ep = true;
 								  print 'double episode found' . $config['debug_separator'];
 								}
 								
@@ -201,7 +263,6 @@ function process_tv() {
                   curl_close($xbmc_ch);
                   print $config['debug_separator'] . 'XBMC notification ' . ($result ? 'ok' : 'FAILED');
                 }
-
 								
 								//send twitter update
 								if($nzb_downloaded && $config['twitter'] && $twitter) {
@@ -218,15 +279,28 @@ function process_tv() {
 								//save to download history
 								if($nzb_downloaded) {
                   $download_node = $show->downloads->addChild('download', '');
-                  $download_node->addChild('episode', $episode_string);
-                  $download_node->addChild('timestamp', time());
+                  $download_node->addAttribute('season', $current_season);
+                  $download_node->addAttribute('episode', $current_episode);
+                  $download_node->addAttribute('timestamp', time());
+                  
+                  if($double_ep) {
+                    $download_node = $show->downloads->addChild('download', '');
+                    $download_node->addAttribute('season', $current_season);
+                    $download_node->addAttribute('episode', $current_episode + 1);
+                    $download_node->addAttribute('timestamp', time());
+                  }
                 }
 								
 								print "\n";
 							}
 							else {
-							  $skipped_episodes++;
+							  //$skipped_episodes++;
 								print "skipping this episode\n";
+								
+								//increment season if we're out of eps
+								if(isset($show_info['episodelist'][$current_season]) && (($current_episode + 1) > sizeof($show_info['episodelist'][$current_season]))) {
+								  break;
+								}
 							}
 							
 							//increment last episode for the show
@@ -237,9 +311,9 @@ function process_tv() {
 							}
 							
               $current_episode++;
-              if($skipped_episodes >= 5) {
-                break;
-              }
+              //if($skipped_episodes >= 5) {
+              //  break;
+              //}
             }
             //invalid episode, proceed to next season
             else {
@@ -287,7 +361,9 @@ function get_show_info($show, $ep = '', $exact = '', $thetvdbid = 0) {
     'Episode Info' => array('airdate' => '', 'episode' => '', 'title' => ''),
     'RFC3339' => '',
     'next_timestamp' => '',
-    'thetvdbid' => $thetvdbid
+    'tvrageid' => 0,
+    'thetvdbid' => 0, //$thetvdbid
+    'episodelist' => array()
   );
   
   
@@ -371,7 +447,7 @@ function get_show_info($show, $ep = '', $exact = '', $thetvdbid = 0) {
     //get quickinfo from tvrage    
     case 'tvrage':
     default:
-      if($fp = @fopen('http://www.tvrage.com/quickinfo.php?show=' . urlencode($show) . '&ep=' . urlencode($ep) . '&exact=' . urlencode($exact), 'r')) {
+      if($fp = @fopen($config['tvrage']['quickinfo'] . '?show=' . urlencode($show) . '&ep=' . urlencode($ep) . '&exact=' . urlencode($exact), 'r')) {
   
         //get all info for the show
         while(!feof($fp)) {
@@ -413,6 +489,9 @@ function get_show_info($show, $ep = '', $exact = '', $thetvdbid = 0) {
             case 'Show Name':
               $show_info['name'] = trim($val);
               break;
+            case 'Show ID':
+            case '<pre>Show ID':
+              $show_info['tvrageid'] = intval($val);
           }
           
           $show_info[$prop] = $val;
@@ -424,6 +503,36 @@ function get_show_info($show, $ep = '', $exact = '', $thetvdbid = 0) {
       else {
         return false;
       }
+      //--
+      
+      //get the episode list (how many seasons, how many eps)
+      if(!empty($show_info['tvrageid'])) {
+        $ch = curl_init();
+        curl_setopt_array($ch, array(
+          CURLOPT_URL => $config['tvrage']['episode_list'] . '?sid=' . $show_info['tvrageid'],
+          CURLOPT_USERAGENT => 'hellaVCR/' . $config['version'],
+          CURLOPT_RETURNTRANSFER => 1,
+          CURLOPT_SSL_VERIFYPEER => 0
+        ));
+        
+        //create simplexml object
+        $raw_xml = curl_exec($ch);
+        $tvrage_sxe = simplexml_load_string($raw_xml);
+    
+        //loop over each season
+        $seasons = $tvrage_sxe->xpath('/Show/Episodelist/Season');
+        foreach($seasons as $season) {
+          $show_info['episodelist'][intval($season['no'])] = array();
+          foreach($season->episode as $episode) {
+            $show_info['episodelist'][intval($season['no'])][] = array(
+              'num' => strval($episode->seasonnum),
+              'aired' => strtotime($episode->airdate),
+              'title' => strval($episode->title)
+            );
+          }
+        }
+      }
+      //--
 
       break;
   }
@@ -444,7 +553,6 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
 	$query = build_newzbin_search_string($q, $language, $format, $source, true);
 	
 	//send to newzbin
-	//if($fp = @fopen($config['newzbin']['root_url'] . 'search/?' . implode('&', $query), 'r')) {
 	if($fp = @fopen($query, 'r')) {
 		$line = @fgetcsv($fp);
 		
@@ -633,7 +741,8 @@ function send_to_sabnzbd($newzbin_id, $isURL = false) {
   $ch = curl_init();
   curl_setopt_array($ch, array(
     CURLOPT_URL => 'http://' . $config['sabnzbd_server'] . ':' . $config['sabnzbd_port'] . '/sabnzbd/api?mode=' . $modeString . $authString . $apiString . '&cat=' . $config['sabnzbd_category'] . '&pp=3&name=' . urlencode($newzbin_id) . $priority,
-    CURLOPT_HEADER => 0
+    CURLOPT_HEADER => 0,
+    CURLOPT_RETURNTRANSFER => 1
   ));
   $result = curl_exec($ch);
   curl_close($ch);
@@ -656,6 +765,8 @@ function saveXML($simplexml) {
   $domDoc->preserveWhiteSpace = false;
   $domDoc->loadXml($simplexml->asXml());
   return file_put_contents($config['xml_tv'], $domDoc->saveXml());
+  //print $domDoc->saveXml();
+  //return true;
 }
 
 ##### main call

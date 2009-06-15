@@ -70,7 +70,10 @@ $config = array(
   'xbmc_host' => '192.168.0.100:80',
   
   //whether you want to print the daily headers in index.php
-  'print_day_headers' => true
+  'print_day_headers' => true,
+  
+  //hide the download history if you don't want it
+  'hide_download_history' => false
 );
 
 ?>

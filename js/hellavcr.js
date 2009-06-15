@@ -1,4 +1,5 @@
 posterURL = '';
+fx = [];
 
 window.addEvent('domready', function() {
   //add form
@@ -114,6 +115,27 @@ window.addEvent('domready', function() {
       infoDiv.setStyle('opacity', '0');
       infoDiv.fade('in');
       return false;
+    });
+  });
+  
+  //download history (link)
+  $$('.historyLink').each(function(el) {
+    //fx[el.rel] = new Fx.Slide(el.rel);
+    //fx[el.rel].hide();
+    el.addEvent('click', function() {
+      $(el.rel).setStyle('display', $(el.rel).getStyle('display') == 'none' ? 'block' : 'none');
+      el.toggleClass('historyLinkActive')
+      return false;
+    });
+  });
+  
+  //download history (div)
+  $$('.historySeason').each(function(el) {
+    fx[el.id] = new Fx.Slide(el.id);
+    fx[el.id].hide();
+    $(el.id + '_h2').addEvent('click', function() {
+      fx[el.id].toggle();
+      this.toggleClass('active');
     });
   });
 });

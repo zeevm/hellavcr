@@ -420,7 +420,7 @@ if(file_exists($config['xml_tv'])) {
           <?php print $show->name; ?>
         </h1>
         <?php
-        $next_class = $downloaded_class = $status_class = $format_class = $language_class = '';
+        $next_class = $downloaded_class = $status_class = $format_class = $language_class = $airs_class = '';
         
         //default classes
         $download_class = $status_class = $next_class = $air_class = '';
@@ -471,43 +471,68 @@ if(file_exists($config['xml_tv'])) {
         <p class="next">
           <span class="title">Next Episode:</span> <span class="info <?php print $next_class; ?>"><?php print $next_episode; ?></span>
         </p>
-        <p class="noMargin">
-          <span class="title">Downloaded Episode:</span> <span class="info <?php print $downloaded_class; ?>"><?php print $downloaded_episode; ?></span><br />
-          <!--
-          <span id="downloads_<?php print $showID; ?>" class="downloadedEps">
-            <?php
-            if(isset($show->season) && isset($show->downloads)) {
-              $d_seasons = array();              
-              
-              foreach($show->downloads->download as $d) {
-                list($d_season, $d_episode) = explode('x', $d->episode);
-                if(!$d_seasons[$d_season]) $d_seasons[$d_season] = array();
-                $d_seasons[$d_season][$d_episode] = array(
-                  'episode' => $d_episode,
-                  'timestamp' => intval($d->timestamp),
-                  'text' => $d->episode . ' - ' . date('m/d/Y ' . ($config['timezone_24hrmode'] ? 'H:i' : 'h:i a'), intval($d->timestamp))
-                );
+        <p>
+          <?php if(empty($config['hide_download_history'])) { ?>
+          <a href="#" class="historyLink" rel="downloads_<?php print $showID; ?>">Download History</a>
+          <?php } ?>
+          <span class="title">Downloaded Episode:</span> <span class="info <?php print $downloaded_class; ?>"><?php print $downloaded_episode; ?></span>
+        </p>
+        <?php if(empty($config['hide_download_history'])) { ?>
+        <div id="downloads_<?php print $showID; ?>" class="downloadedEps">
+          <?php
+          if(isset($show->episodelist)) {
+            //print each season
+            foreach($show->episodelist->season as $season) {
+              //hidden
+              if(isset($season['hide']) && $season['hide'] == 'true') {
+                continue;
               }
+            
+              $downloads = $show->downloads->xpath('download[@season=' . $season['num'] . ']');
+              $season_complete = ($season['episodes'] == sizeof($downloads) || (isset($season['complete']) && $season['complete'] == 'true'));
+              $complete_class = ($season_complete ? 'complete' : '');
+              print '<h2 id="history_' . $showID . '_' . $season['num'] . '_h2"><span class="' . $complete_class . '">' . sizeof($downloads) . ' / ' . $season['episodes'] .'</span>Season ' . $season['num'] . '</h2>';
               
-              
-              krsort($d_seasons);
-              
-              //print out episodes and their status
-              foreach($d_seasons as $d_season => $d_eps) {
-                print '<h2>Season ' . $d_season . '</h2>';
-                krsort($d_eps);
-                foreach($d_eps as $d_ep) {
-                  print '<div>' . $d_season . 'x' . $d_ep['episode'] . ' <img alt="" src="images/save.png" /></div>';
+              //episodes
+              $per_column = ceil($season['episodes'] / 8.0);
+              print '<div id="history_' . $showID . '_' . $season['num'] . '" class="historySeason"><div>';
+              for($i = 1; $i <= $season['episodes']; $i++) {
+                //columns
+                if(($i-1) % $per_column == 0 && $i > $per_column) print '</div>';
+                if(($i-1) % $per_column == 0) print '<div>';
+                
+                $downloaded = $show->downloads->xpath('download[@season=' . $season['num'] . '][@episode=' . $i . ']');
+                $ep_string = $season['num'] . 'x' . sprintf('%02d', $i);
+                
+                //downloaded
+                if($season_complete || !empty($downloaded)) {
+                  print '<p class="downloaded" title="downloaded ' . date('n/j/y g:i a', floatval($downloaded[0]['timestamp'])) . '">' . $ep_string . '</p>';
                 }
-                print '<br />';
+                //not aired yet
+                else if($season['num'] > intval($show->season) || ($season['num'] == intval($show->season) && $i > intval($show->episode))) {
+                  print '<p class="notaired" title="not aired yet">' . $ep_string . '</p>';
+                }
+                //not downloaded
+                else {
+                  print '<p class="notdownloaded" title="attempt downloaded">' . $ep_string . '</p>';
+                }
               }
+              print '</div></div></div>';
             }
-            ?>
-          </span>
-          -->
-          <span class="title">Status:</span> <span class="info <?php print $status_class; ?>"><?php print $status; ?></span><br />
-          <span class="title">Airs:</span> <span class="info <?php print $airs_class; ?>"><?php print $airs; ?></span><br />
-          <span class="title">Format:</span> <span class="info <?php print $format_class; ?>"><?php print empty($show->format) ? 'any' : $GLOBALS['formats'][strval($show->format)]; ?></span><br />
+          }
+          ?>
+        </div>
+        <?php } ?>
+        <p>
+          <span class="title">Status:</span> <span class="info <?php print $status_class; ?>"><?php print $status; ?></span>
+        </p>
+        <p>
+          <span class="title">Airs:</span> <span class="info <?php print $airs_class; ?>"><?php print $airs; ?></span>
+        </p>
+        <p>
+          <span class="title">Format:</span> <span class="info <?php print $format_class; ?>"><?php print empty($show->format) ? 'any' : $GLOBALS['formats'][strval($show->format)]; ?></span>
+        </p>
+        <p>
           <span class="title">Language:</span> <span class="info <?php print $language_class; ?>"><?php print empty($show->language) ? 'any' : $GLOBALS['languages'][strval($show->language)]; ?></span>
         </p>
       </div>

@@ -69,6 +69,10 @@ $config['project_url'] = 'http://code.google.com/p/hellavcr/';
 $config['logging'] = array(
   'date_format' => '[m/d/y H:i:s] '
 );
+$config['tvrage'] = array(
+  'quickinfo' => 'http://services.tvrage.com/tools/quickinfo.php',
+  'episode_list' => 'http://services.tvrage.com/feeds/episode_list.php'
+);
 $config['thetvdb'] = array(
   'small_poster' => 'http://thetvdb.com/banners/_cache/posters/',
   'large_poster' => 'http://thetvdb.com/banners/posters/',
