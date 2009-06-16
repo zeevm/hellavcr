@@ -226,6 +226,7 @@ function sortShows($show1, $show2) {
   <link type="text/css" rel="stylesheet" media="only screen and (max-device-width: 480px)" href="css/iphone.css" />
 </head>
 <body>
+<div id="bodyBG"></div>
 <div id="outerWrapper">
   <div id="titleBar">
     <div id="addWrapper">
