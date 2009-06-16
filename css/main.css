@@ -117,6 +117,10 @@ a, a.link {
   border-bottom: 1px solid #eee;
 }
 
+.listing h1.ended {
+  color: red;
+}
+
 .listing h1 > .icons {
   float: right;
 }

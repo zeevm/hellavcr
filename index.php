@@ -180,6 +180,11 @@ function sortShows($show1, $show2) {
       else if(!empty($show1->next) && !empty($show1->season) && !empty($show1->episode) && strpos($show1->next, $show1->season . 'x' . sprintf('%02d', $show1->episode)) !== false) $show1->next_timestamp = strtotime('+1 week');
       if(strlen($show2->next_timestamp) <= 0) $show2->next_timestamp = $config['index']['unknown_timestamp'];
       else if(!empty($show2->next) && !empty($show2->season) && !empty($show2->episode) && strpos($show2->next, $show2->season . 'x' . sprintf('%02d', $show2->episode)) !== false) $show2->next_timestamp = strtotime('+1 week');
+      
+      //ended
+      if(strtolower($show1->status) == $config['index']['status_ended']) $show1->next_timestamp = ($config['index']['unknown_timestamp'] + 1);
+      if(strtolower($show2->status) == $config['index']['status_ended']) $show2->next_timestamp = ($config['index']['unknown_timestamp'] + 1);
+      
       if($show1->next_timestamp == $show2->next_timestamp) return 0;
       if($dir == 'desc') return (intval($show1->next_timestamp) < intval($show2->next_timestamp)) ? 1 : -1;
       else return (intval($show1->next_timestamp) < intval($show2->next_timestamp)) ? -1 : 1;
@@ -188,13 +193,13 @@ function sortShows($show1, $show2) {
       $show1_last = 0;
       if($show1->downloads) {
         foreach($show1->downloads->download as $d) {
-          $show1_last = $d->timestamp;
+          $show1_last = $d['timestamp'];
         }
       }
       $show2_last = 0;
       if($show2->downloads) {
         foreach($show2->downloads->download as $d) {
-          $show2_last = $d->timestamp;
+          $show2_last = $d['timestamp'];
         }
       }
       if($show1_last == $show2_last) return 0;
@@ -350,38 +355,72 @@ if(file_exists($config['xml_tv'])) {
   //loop over each show
   foreach($shows as $show) {
     $showID = htmlentities($show->attributes()->id);
-    $showDay = strtolower(date('l', intval($show->next_timestamp)));
     
     //print day headers
-    if($config['print_day_headers'] && $_GET['sort'] == 'upcoming') {
-      //less than a week, print day
-      if(intval($show->next_timestamp) < intval(strtotime("+1 week"))) {
-        if($lastHeader != $showDay) {
-          print '<h1 class="day">' . $showDay . '</h1>';
-          $lastHeader = $showDay;
-        }
+    if($config['print_day_headers']) {
+    
+      switch($_GET['sort']) {
+        //upcoming
+        case 'upcoming':
+          $showDay = strtolower(date($config['index']['header_format']['upcoming'], intval($show->next_timestamp)));
+          
+          //less than a week, print day
+          if(intval($show->next_timestamp) < intval(strtotime("+1 week"))) {
+            if($lastHeader != $showDay) {
+              print '<h1 class="day">' . $showDay . '</h1>';
+              $lastHeader = $showDay;
+            }
+          }
+    
+          //who knows
+          else if($show->next_timestamp == $config['index']['unknown_timestamp'] && $lastHeader != $config['index']['headers']['unknown']) {
+            print '<h1 class="day">' . $config['index']['headers']['unknown'] . '</h1>';
+            $lastHeader = $config['index']['headers']['unknown'];
+          }
+          
+          //more than a week
+          else if($show->next_timestamp < $config['index']['unknown_timestamp'] && $lastHeader != $config['index']['headers']['1week+']) {
+            print '<h1 class="day">' . $config['index']['headers']['1week+'] . '</h1>';
+            $lastHeader = $config['index']['headers']['1week+'];
+          }
+          
+          //cancelled/ended
+          else if(strtolower($show->status) == $config['index']['status_ended'] && $lastHeader != $config['index']['headers']['ended']) {
+            print '<h1 class="day">' . $config['index']['headers']['ended'] . '</h1>';
+            $lastHeader = $config['index']['headers']['ended'];
+          }
+          
+          break;
+          
+        //downloaded
+        case 'downloaded':
+          $lastDownloadTimestamp = 0;
+          $downloads = $show->downloads->xpath('download');
+          if(sizeof($downloads) > 0) {
+            $lastDownloadTimestamp = $downloads[sizeof($downloads) - 1]['timestamp'];
+          }
+          
+          $showDay = strtolower(date($config['index']['header_format']['downloaded'], intval($lastDownloadTimestamp)));
+          if($lastDownloadTimestamp == 0) $showDay = $config['index']['headers']['never'];
+          
+          if($lastHeader != $showDay) {
+            print '<h1 class="day">' . $showDay . '</h1>';
+            $lastHeader = $showDay;
+          }
+          
+          break;
+          
+        //name
+        case 'name':
+          $showDay = strtolower(substr($show->name, 0, 1));
+          if(is_numeric($showDay)) $showDay = '#';
         
-        //if we're on the current day then paint it accordingly
-        //if(date('m/d/Y') == date('m/d/Y', intval($show->next_timestamp)))
-        //  $show_div_class = "listing_current";
-        //else
-        //  $show_div_class = "";
-      }
-
-      
-
-      //who knows
-      else if($show->next_timestamp == $config['index']['unknown_timestamp'] && $lastHeader != $config['index']['headers']['unknown']) {
-        print '<h1 class="day">' . $config['index']['headers']['unknown'] . '</h1>';
-        $lastHeader = $config['index']['headers']['unknown'];
-        //$show_div_class = "listing_unknown";
-      }
-      
-      //more than a week
-      else if($show->next_timestamp < $config['index']['unknown_timestamp'] && $lastHeader != $config['index']['headers']['1week+']) {
-        print '<h1 class="day">' . $config['index']['headers']['1week+'] . '</h1>';
-        $lastHeader = $config['index']['headers']['1week+'];
-        //$show_div_class = "listing_toofar";
+          if($lastHeader != $showDay) {
+            print '<h1 class="day">' . $showDay . '</h1>';
+            $lastHeader = $showDay;
+          }
+          
+          break;
       }
     }
 ?>
@@ -408,7 +447,7 @@ if(file_exists($config['xml_tv'])) {
       ?>
       <img alt="" src="<?php print $poster; ?>" />
       <div id="info_<?php print $showID; ?>">
-        <h1>
+        <h1<?php print strtolower($show->status) == $config['index']['status_ended'] ? ' class="ended"' : ''; ?>>
           <div class="icons">
             <a href="<?php print build_newzbin_search_string($show->name, $show->language, $show->format, $show->source, false); ?>" target="_blank" title="newzbin"><img alt="" src="images/newzbin.png" /></a>
             <a href="<?php print $show->url; ?>" target="_blank" title="tvrage"><img alt="" src="images/info.png" /></a>

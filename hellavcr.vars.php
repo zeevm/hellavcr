@@ -91,10 +91,17 @@ $config['hollers'] = array(
 //index page
 $config['index'] = array(
   'unknown_timestamp' => '999999999999',
+  'header_format' => array(
+    'upcoming' => 'l',
+    'downloaded' => 'F j, Y (l)'
+  ),
   'headers' => array(
     '1week+' => 'more than a week',
-    'unknown' => 'unknown'
-  )
+    'unknown' => 'unknown',
+    'never' => 'nothing downloaded',
+    'ended' => 'canceled/ended'
+  ),
+  'status_ended' => 'canceled/ended'
 );
 
 ?>
