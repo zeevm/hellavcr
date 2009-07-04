@@ -31,7 +31,7 @@ switch($_REQUEST['op']) {
         $season = 1;
         $episode = 0;
       }
-      
+
       $show = $xml->addChild('show');
       $show->addAttribute('id', generate_id());
       $show->addChild('name', htmlspecialchars(trim(get_magic_quotes_gpc() ? stripslashes($_POST['name']) : $_POST['name'])));
@@ -351,6 +351,11 @@ if(file_exists($config['xml_tv'])) {
   $shows = $xml->xpath('/tv/show');
   usort($shows, 'sortShows');
   
+	//no shows
+	if(sizeof($shows) <= 0) { ?>
+		<div class="errorBox">no TV shows added yet!</div>
+	<?php } 
+
   $lastHeader = '';
   
   //loop over each show
