@@ -1,4 +1,40 @@
-hellaVCR
---------
+hellaVCR 0.7
+------------
 
-bleh2
+hellaVCR requires
+
+    * PHP 5 (cli)
+    * SimpleXML
+    * cURL
+    * a Newzbin account
+    * a usenet downloader (anything that support nzb files) 
+
+Optional components
+
+    * hellanzb
+    * sabnzbd+
+    * twitter account
+    * mail server
+    * xbmc/plex 
+
+Notes about upgrading
+
+    * backup your tv.xml file
+    * backup your hellavcr.config.php as a reference for the newer version 
+
+Configuration
+
+    * if running hellaVCR for the first time, remove sample from sample.hellavcr.config.php and sample.tv.xml
+    * update hellavcr.config.php with your correct settings (add any new config options)
+    * make tv.xml world writable (chmod 666 tv.xml)
+    * make posters/ world writable (chmod 666 posters/) 
+
+To run hellaVCR
+
+    * php hellavcr.php >> hellavcr.log
+    * probably best to run it in the cron (make sure to use absolute paths) 
+
+Web Interface
+
+    * index.php
+    * add new TV shows and choose poster art 
