@@ -550,7 +550,7 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
 	print date($config['logging']['date_format']) . '  searching newzbin for ' . $q_debug . $config['debug_separator'];
 	
 	//formatted query
-	$query = build_newzbin_search_string($q, $language, $format, $source, true);
+	$query = build_newzbin_search_string($q, $language, $format, $source, true, true);
 	
 	//send to newzbin
 	if($fp = @fopen($query, 'r')) {
@@ -581,7 +581,7 @@ function search_newzbin($show, $year, $season, $episode, $language, $format, $so
 
 //common function to build up the full newzbin search string
 //used by search_newzbin() and the newzbin icon on index.php
-function build_newzbin_search_string($name, $language, $format, $source, $csv = false) {
+function build_newzbin_search_string($name, $language, $format, $source, $csv = false, $useauth = false) {
   global $config;
   
   //build up params
@@ -615,7 +615,7 @@ function build_newzbin_search_string($name, $language, $format, $source, $csv = 
     $query[] = 'feed=csv';
   }
   
-  return $config['newzbin']['protocol'] . $config['newzbin_username'] . ':' . $config['newzbin_password'] . '@' . $config['newzbin']['base_url'] . 'search/?' . implode( '&', $query);
+  return $config['newzbin']['protocol'] . ($useauth ? $config['newzbin_username'] . ':' . $config['newzbin_password'] . '@' : '') . $config['newzbin']['base_url'] . 'search/?' . implode( '&', $query);
 }
 
 //
