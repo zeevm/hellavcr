@@ -80,7 +80,9 @@ $config['thetvdb'] = array(
   'api_key' => 'A6D11F92201EEBFA'
 );
 $config['newzbin'] = array(
-  'root_url' => 'https://v3.newzbin.com/'
+  'root_url' => 'https://v3.newzbin.com/',
+  'protocol' => 'https://',
+  'base_url' => 'v3.newzbin.com/'
 );
 
 //clever beginnings to tweets, rest of sentence ends in: [show] [season]x[episode]

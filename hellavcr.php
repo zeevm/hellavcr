@@ -615,7 +615,7 @@ function build_newzbin_search_string($name, $language, $format, $source, $csv = 
     $query[] = 'feed=csv';
   }
   
-  return $config['newzbin']['root_url'] . 'search/?' . implode( '&', $query);
+  return $config['newzbin']['protocol'] . $config['newzbin_username'] . ':' . $config['newzbin_password'] . '@' . $config['newzbin']['base_url'] . 'search/?' . implode( '&', $query);
 }
 
 //
