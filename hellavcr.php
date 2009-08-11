@@ -11,7 +11,7 @@ if($config['twitter']) {
 date_default_timezone_set(isset($config['timezone']) ? $config['timezone'] : 'US/Pacific');
 
 $PID_FILES = array();
-$pid_file_name = "/var/run/hellavcr.pid";
+$pid_file_name = "/var/lock/hellavcr.pid";
     
 function check_pid_file($file) {
     $f = fopen($file, 'r');
