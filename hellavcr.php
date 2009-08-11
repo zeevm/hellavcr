@@ -10,6 +10,41 @@ if($config['twitter']) {
 }
 date_default_timezone_set(isset($config['timezone']) ? $config['timezone'] : 'US/Pacific');
 
+$PID_FILES = array();
+$pid_file_name = "/var/run/hellavcr.pid";
+    
+function check_pid_file($file) {
+    $f = fopen($file, 'r');
+    if($f) {
+        flock($f, LOCK_SH);
+        $pid = trim(fgets($f));
+        if(posix_getsid($pid))
+            die("Running job using PID $pid from $file found, exiting\n");
+        fclose($f);
+    }   
+    $f = fopen($file, 'w');
+    flock($f, LOCK_EX); 
+    fwrite($f, posix_getpid() . "\n");
+    fclose($f);
+    global $PID_FILES;
+    $PID_FILES[] = $file;
+    return $file;
+}       
+
+function clean_pid_files() {
+    global $PID_FILES;
+    foreach($PID_FILES as $file) {
+        $f = fopen($file, 'r');
+        if(!$f)
+            continue;
+        flock($f, LOCK_SH);
+        $pid = trim(fgets($f));
+        fclose($f);
+        if($pid == posix_getpid())
+            unlink($file);
+    }
+}
+
 //
 function process_tv() {
   global $config, $twitter;
@@ -772,6 +807,8 @@ function saveXML($simplexml) {
 ##### main call
 
 if(empty($hellavcr_include)) {
+  register_shutdown_function('clean_pid_files');
+  check_pid_file($pid_file_name);
   process_tv();
 }
 
